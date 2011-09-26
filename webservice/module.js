@@ -106,43 +106,49 @@ Module.prototype.attach = function (app, customOptions) {
 		app.get(options.prefix+i, function (req, res) {
 			var contentType =  "application/json";
 
-			function sendException(errType, exception) {
+      var callback = function (err, result) {
+				if (err) {
+					var errType = err.type || 'ServerError';
+
+				  var error = {
+					  error: errType
+				  };
+				  error.message = ("string" == typeof err) ? err : err.message;
+
+				  if (err.stack) error.stack = err.stack;
+
+          result = JSON.stringify(error);
+				  console.log(err);
+				}
+
+				result = result || '{}';
+				if (typeof result != 'string'){
+					result = JSON.stringify(result);
+				}
+
+        // Check for JSONP
+        if (req.query.callback) {
+          contentType =  "text/javascript";
+          result = req.query.callback+"("+result+")";
+        }
+
+        // Return result
 				res.header('Content-Type', contentType);
-				var error = {
-					error: errType,
-				};
-				error.message = ("string" == typeof exception) ? exception : exception.message;
-				if (exception.stack) error.stack = exception.stack;
-				res.send(JSON.stringify(error));
-				console.log(exception);
-			}
+	      res.send(result);
+			};
 
 			try {
 				var params = req.query;
 				params = method.schema.apply(params);
 			} catch (e) {
-				sendException("BadRequest", e);
+        e.type = "BadRequest";
+        callback(e);
 			}
 
 			try {
-				var callback = function (err, result) {
-					if (err) {
-						var errType = err.type || 'ServerError';
-						sendException(errType, err);
-						return;
-					}
-
-					result = result || '{}';
-					if (typeof result != 'string'){
-						result = JSON.stringify(result);
-					}
-
-					res.header('Content-Type', contentType);
-					res.send(result);
-				};
 				method.webHandler.call(self, method, params, req, res, callback);
 			} catch (e) {
-				sendException("ServerError", e);
+				callback(e);
 			}
 		});
 	};
