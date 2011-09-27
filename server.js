@@ -5,7 +5,7 @@ var Tx = require('./tx').Tx;
 var Block = require('./block').Block;
 var RealtimeAPI = require('./realtime').API;
 
-var createNode = require('../node-bitcoin-p2p/daemon/init').createNode;
+var createNode = require('bitcoin-p2p/daemon/init').createNode;
 
 var node = createNode({ welcome: true });
 node.start();
