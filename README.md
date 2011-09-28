@@ -11,10 +11,17 @@ node-bitcoin-p2p](https://github.com/bitcoinjs/node-bitcoin-p2p).
 Make sure you download the block chain after configuring
 `node-bitcoin-p2p`.
 
-Then, clone `node-bitcoin-exit`.
+Then, run these steps to install `node-bitcoin-exit`:
 
 ``` sh
+# Get a copy of node-bitcoin-exit
 git clone git://github.com/bitcoinjs/node-bitcoin-exit.git --recursive
+# Switch to the folder
+cd node-bitcoin-exit
+# Link in your copy of node-bitcoin-p2p
+sudo npm link bitcoin-p2p
+# Install other dependencies
+sudo npm install
 ```
 
 # Usage
