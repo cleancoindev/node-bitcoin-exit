@@ -9,6 +9,7 @@
 		"socket.io": ">=0.6.18",
 		"express": ">=2.3.6",
     "step": ">=0.0.4",
-    "buffertools": ">=1.0.5"
+    "buffertools": ">=1.0.5",
+    "extend": ">=1.0.0"
 	}
 }
