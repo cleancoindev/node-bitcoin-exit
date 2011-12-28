@@ -115,15 +115,24 @@ Pubkeys.method('register', {
         var pubKeyHash = pubKeyHashes[i];
       }
 
-      storage.Transaction.find(
-        {affects: {"$in": pubKeyHashes}},
-        ["_id"],
-        function (err, txs) {
-        try {
+      var txs;
+      var data = new PubkeysData();
+      Step(
+        function getTxHashesStep() {
+          console.log('get tx hashes step');
+          storage.getAffectedTransactions(pubKeyHashes, this);
+        },
+        function getTxsStep(err, txHashes) {
           if (err) throw err;
-          console.log("txcoint", txs.length);
 
-          var data = new PubkeysData();
+          console.log('get txs step');
+          storage.getTransactionsByHashes(txHashes, this);
+        },
+        function (err, txData) {
+          if (err) throw err;
+
+          txs = txData;
+          console.log(txs);
 
           pubKeyHashes.forEach(function (pubKeyHash) {
             // Set up events for new transactions
@@ -140,86 +149,88 @@ Pubkeys.method('register', {
           var txsArray = [];
           var accIndex = {};
 
-          Step(
-            function loadBlockMetainfo() {
-              // If there are no transactions, skip this step. This is
-              // needed because Step hangs if no this.parallel() is called.
-              if (!txs.length) {
-                this(null);
+          // If there are no transactions, skip this step. This is
+          // needed because Step hangs if no this.parallel() is called.
+          if (!txs.length) {
+            this(null);
+            return;
+          }
+
+          var parallel = this.parallel;
+          txs.forEach(function (tx) {
+            var cb = parallel();
+            storage.getContainingBlock(tx.getHash(), function (err, blockHash) {
+              if (err) {
+                cb(err);
                 return;
               }
 
-              var parallel = this.parallel;
-              txs.forEach(function (tx) {
-                storage.Block.findOne({txs: tx.hash, active: 1}, parallel());
-              });
-            },
-            function processBlockMetaInfo() {
-              var blocks = Array.prototype.slice.apply(arguments);
-              var err = blocks.shift();
+              storage.getBlockByHash(blockHash, cb);
+            });
+          });
+        },
+        function processBlockMetaInfo() {
+          var blocks = Array.prototype.slice.apply(arguments);
+          var err = blocks.shift();
 
-              if (err) throw err;
+          if (err) throw err;
 
-              txs = txs.map(function (tx, i) {
-                for (var j = 0, l = blocks[i].txs.length; j < l; j++) {
-                  if (blocks[i].txs[j].compare(tx.hash) == 0) {
-                    break;
-                  }
-                }
-                return {
-                  tx: tx,
-                  height: blocks[i].height,
-                  index: j
-                };
-              });
-              this(null);
-            },
-            function generateChain() {
-              if (err) throw err;
-
-              // Sort transactions by height, then index
-              txs.sort(function (a,b) {
-                if (a.height == b.height) {
-                  return a.index - b.index;
-                } else {
-                  return a.height - b.height;
-                }
-              });
-
-              // Create a chain with only unique values
-              var curHash, lastHash, chainHash;
-              for (var i = 0; i < txs.length; i++) {
-                curHash = txs[i].tx.hash;
-                // Add first tx
-                if (i == 0) {
-                  chainHash = curHash;
-
-                  // Add only unique txs
-                  // (we only need to check against the last one as they are sorted)
-                } else if (lastHash.compare(curHash) != 0) {
-                  chainHash = Util.sha256(chainHash.concat(curHash));
-                } else {
-                  continue;
-                }
-                data.chain.push({
-                  hash: curHash,
-                  chainHash: chainHash,
-                  height: txs[i].height,
-                  index: txs[i].index
-                });
-                lastHash = curHash;
+          txs = txs.map(function (tx, i) {
+            for (var j = 0, l = blocks[i].txs.length; j < l; j++) {
+              if (blocks[i].txs[j].compare(tx.hash) == 0) {
+                break;
               }
+            }
+            return {
+              tx: tx,
+              height: blocks[i].height,
+              index: j
+            };
+          });
+          this(null);
+        },
+        function generateChain(err) {
+          if (err) throw err;
 
-              console.log(data);
+          // Sort transactions by height, then index
+          txs.sort(function (a,b) {
+            if (a.height == b.height) {
+              return a.index - b.index;
+            } else {
+              return a.height - b.height;
+            }
+          });
 
-              this(null, data);
-            },
-            callback
-          );
-        } catch (err) {
-          callback(err);
-        }
-      });
+          // Create a chain with only unique values
+          var curHash, lastHash, chainHash;
+          for (var i = 0; i < txs.length; i++) {
+            curHash = txs[i].tx.hash;
+            // Add first tx
+            if (i == 0) {
+              chainHash = curHash;
+
+              // Add only unique txs
+              // (we only need to check against the last one as they are sorted)
+            } else if (lastHash.compare(curHash) != 0) {
+              chainHash = Util.sha256(chainHash.concat(curHash));
+            } else {
+              continue;
+            }
+            data.chain.push({
+              hash: curHash,
+              chainHash: chainHash,
+              height: txs[i].height,
+              index: txs[i].index
+            });
+            lastHash = curHash;
+          }
+
+          console.log(data);
+
+          this(null, data);
+        },
+        callback
+      );
     };
 
     if ("undefined" == typeof PubkeysCache[handle]) {
@@ -296,14 +307,14 @@ Pubkeys.method('gettxs', {
       Step(
         function loadTransactions() {
           console.log("loading transactions");
-          storage.Transaction.find({_id: {"$in": txsHashes}}, this);
+          storage.getTransactionsByHashes(txsHashes, this);
         },
         function loadBlocks(err, txData) {
           if (err) throw err;
 
           var txIndex = {};
           txData.forEach(function (tx) {
-            txIndex[tx.hash.toString('base64')] = tx;
+            txIndex[tx.getHash().toString('base64')] = tx;
           });
 
           if (!txs.length) {
@@ -313,27 +324,30 @@ Pubkeys.method('gettxs', {
           for (var i = 0, l = txs.length; i < l; i++) {
             var cb = this.parallel();
 
-            storage.Block.findOne(
-              {txs: txs[i].hash, active: 1},
-              function (i, err, block) {
-                if (err) {
-                  // Query error
-                  txs[i] = null;
-                  cb(err);
-                  return;
-                } else if (!block) {
-                  // No result (means corrupted db, ignore transaction)
-                  txs[i] = null;
-                  cb(null);
-                  return;
-                } else {
-                  // Success
+            storage.getContainingBlock(
+              txs[i].hash,
+              function (i, err, blockHash) {
+                storage.getBlockByHash(blockHash, function (err, block) {
+                  if (err) {
+                    // Query error
+                    txs[i] = null;
+                    cb(err);
+                    return;
+                  } else if (!(block && block.active)) {
+                    // Block invalid or inactive, ignore transaction
+                    console.log(block);
+                    txs[i] = null;
+                    cb(null);
+                    return;
+                  } else {
+                    // Success
 
-                  // Create final tx metadata object
-                  var dbObj = txIndex[txs[i].hash.toString('base64')];
-                  txs[i] = self.createOutTx(dbObj, txs[i], block);
-                  cb(null);
-                }
+                    // Create final tx metadata object
+                    var dbObj = txIndex[txs[i].hash.toString('base64')];
+                    txs[i] = self.createOutTx(dbObj, txs[i], block);
+                    cb(null);
+                  }
+                });
               }.bind(this, i)
             );
           }
@@ -450,17 +464,17 @@ Pubkeys.prototype.createOutTx = function (dbObj, chainTx, block) {
   dbObj.ins.forEach(function (dbTxin) {
     var outTxin = {};
     outTxin.outpoint = {
-      hash: dbTxin.outpoint.hash.toString('base64'),
-      index: +dbTxin.outpoint.index
+      hash: dbTxin.getOutpointHash().toString('base64'),
+      index: +dbTxin.getOutpointIndex()
     };
-    outTxin.script = dbTxin.script.toString('base64');
-    outTxin.sequence = +dbTxin.sequence;
+    outTxin.script = dbTxin.s.toString('base64');
+    outTxin.sequence = +dbTxin.q;
     outObj.ins.push(outTxin);
   });
   dbObj.outs.forEach(function (dbTxout) {
     var outTxout = {};
-    outTxout.value = Util.valueToBigInt(new Buffer(dbTxout.value, 'base64')).toString();
-    outTxout.script = dbTxout.script.toString('base64');
+    outTxout.value = Util.valueToBigInt(new Buffer(dbTxout.v, 'base64')).toString();
+    outTxout.script = dbTxout.s.toString('base64');
     outObj.outs.push(outTxout);
   });
 
