@@ -3,7 +3,7 @@ require('buffertools');
 var uuid = require('node-uuid');
 var Step = require('step');
 var Module = require('./webservice').Module;
-var bitcoin = require('bitcoin-p2p');
+var bitcoin = require('bitcoinjs');
 var Util = bitcoin.Util;
 
 var PubkeysCache = function () {

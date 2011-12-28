@@ -1,11 +1,13 @@
-var bitcoin = require('bitcoin-p2p');
+#!/usr/bin/env node
+
+var bitcoin = require('bitcoinjs');
 var express = require('express');
 var Pubkeys = require('./pubkeys').Pubkeys;
 var Tx = require('./tx').Tx;
 var Block = require('./block').Block;
 var RealtimeAPI = require('./realtime').API;
 
-var createNode = require('bitcoin-p2p/daemon/init').createNode;
+var createNode = require('bitcoinjs/daemon/init').createNode;
 
 var node = createNode({ welcome: true });
 node.start();
@@ -21,11 +23,11 @@ app.configure(function(){
 	app.use(express.bodyParser());
 	app.use(express.methodOverride());
 	app.use(app.router);
-	app.use(express.static(__dirname + '/public'));
+	app.use(express['static'](__dirname + '/public'));
 });
 
 app.configure('development', function(){
-	app.use(express.errorHandler({ dumpExceptions: true, showStack: true })); 
+	app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 });
 
 app.configure('production', function(){

@@ -19,7 +19,7 @@ git clone git://github.com/bitcoinjs/node-bitcoin-exit.git --recursive
 # Switch to the folder
 cd node-bitcoin-exit
 # Link in your copy of node-bitcoin-p2p
-sudo npm link bitcoin-p2p
+sudo npm link bitcoinjs
 # Install other dependencies
 sudo npm install
 ```
