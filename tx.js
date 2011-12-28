@@ -1,7 +1,7 @@
 var sys = require('sys');
 require('buffertools');
 var Module = require('./webservice').Module;
-var bitcoin = require('bitcoin-p2p');
+var bitcoin = require('bitcoinjs');
 var Util = bitcoin.Util;
 
 var Tx = exports.Tx = Module.define({

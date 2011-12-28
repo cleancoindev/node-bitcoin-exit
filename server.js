@@ -1,11 +1,11 @@
-var bitcoin = require('bitcoin-p2p');
+var bitcoin = require('bitcoinjs');
 var express = require('express');
 var Pubkeys = require('./pubkeys').Pubkeys;
 var Tx = require('./tx').Tx;
 var Block = require('./block').Block;
 var RealtimeAPI = require('./realtime').API;
 
-var createNode = require('bitcoin-p2p/daemon/init').createNode;
+var createNode = require('bitcoinjs/daemon/init').createNode;
 
 var node = createNode({ welcome: true });
 node.start();
