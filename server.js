@@ -6,6 +6,7 @@ var Pubkeys = require('./pubkeys').Pubkeys;
 var Tx = require('./tx').Tx;
 var Block = require('./block').Block;
 var RealtimeAPI = require('./realtime').API;
+var http = require('http');
 
 var createNode = require('bitcoinjs/daemon/init').createNode;
 
@@ -32,6 +33,28 @@ app.configure('development', function(){
 
 app.configure('production', function(){
   app.use(express.errorHandler());
+});
+
+app.get(/^\/json\//, function (req, res) {
+    console.log("URL: " + req.url);
+    var req = http.request({method: 'GET',
+			    host: 'localhost',
+			    port: 3334,
+			    path: req.url},
+			   function (resp) {
+			       var temp = '';
+			       resp.on('data', function (chunk) {
+				   temp = temp.concat(chunk);
+			       });
+			       resp.on('end', function(){
+				   res.send(temp);
+		     });
+		 });
+    req.on('error', function(e) {
+	console.log('problem with request: ' + e.message);
+	res.send("error");
+    });
+    req.end();
 });
 
 app.get('/', function(req, res){
