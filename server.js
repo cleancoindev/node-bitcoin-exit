@@ -13,7 +13,7 @@ var createNode = require('bitcoinjs/daemon/init').createNode;
 var node = createNode({ welcome: true });
 node.start();
 
-var app = express.createServer();
+var app = express();
 
 
 // Configuration
@@ -76,8 +76,11 @@ var blockModule = new Block({
 });
 blockModule.attach(app, '/block/');
 
-app.listen(3125);
 
-var io = require('socket.io').listen(app);
+var server = http.createServer(app);
+
+var io = require('socket.io').listen(server);
 var realtimeApi = new RealtimeAPI(io, node, pubkeysModule, txModule, blockModule);
+
+server.listen(3125);
 
