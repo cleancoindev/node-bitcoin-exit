@@ -1,9 +1,12 @@
-var RealtimeAPI = exports.API = function (io, node, pubkeysModule, txModule, blockModule) {
+var RealtimeAPI = exports.API = function (io, node, pubkeysModule, txModule, blockModule, query) {
   this.io = io;
   this.node = node;
   this.pubkeysModule = pubkeysModule;
   this.txModule = txModule;
   this.blockModule = blockModule;
+
+  // XXX - ugly hack, remove this once query.js is rewritten to proper class
+  query.node = node;
 
   io.sockets.on('connection', (function (client) {
     client.on('message', (function (data) {
@@ -21,6 +24,17 @@ var RealtimeAPI = exports.API = function (io, node, pubkeysModule, txModule, blo
       case "pubkeysUnconfirmed":
       case "txSend":
         this[data.method](client, data.params[0], defaultCallback);
+        break;
+      case 'indexquery':
+      case 'txquery':
+      case 'blockquery':
+      case 'addrquery':
+        query[data.method](data.params[0], null,
+		// wrapped because of .this rebinding above
+		function(err, data) {
+			defaultCallback(err, data)
+		}
+	);
         break;
       default:
         this.sendError(client, "Unknown method '"+data.method+"'", data.id);
@@ -125,11 +139,11 @@ RealtimeAPI.prototype.handleTxCancel = function (client, data, e) {
 };
 
 RealtimeAPI.prototype.sendError = function (client, msg, id) {
-  client.send(JSON.stringify({
+  client.json.send({
     "result": null,
-    "error": msg,
+    "error": ''+msg,
     "id": id
-  }));
+  });
 };
 RealtimeAPI.prototype.sendResult = function (client, result, id) {
   var msg = {
