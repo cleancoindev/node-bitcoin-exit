@@ -7,6 +7,7 @@ var Tx = require('./tx').Tx;
 var Block = require('./block').Block;
 var RealtimeAPI = require('./realtime').API;
 var http = require('http');
+var Query = require('./query');
 
 var createNode = require('bitcoinjs/daemon/init').createNode;
 
@@ -80,7 +81,7 @@ blockModule.attach(app, '/block/');
 var server = http.createServer(app);
 
 var io = require('socket.io').listen(server);
-var realtimeApi = new RealtimeAPI(io, node, pubkeysModule, txModule, blockModule);
+var realtimeApi = new RealtimeAPI(io, node, pubkeysModule, txModule, blockModule, Query);
 
 server.listen(3125);
 
