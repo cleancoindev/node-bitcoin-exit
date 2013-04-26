@@ -5,6 +5,7 @@ var Step = require('step');
 var Module = require('./webservice').Module;
 var bitcoin = require('bitcoinjs');
 var Util = bitcoin.Util;
+var events = require("events");
 
 var PubkeysCache = function () {
   events.EventEmitter.call(this);
