@@ -3,6 +3,10 @@ var Util = bitcoin.Util;
 var Step = require('step');
 var Bignum = bitcoin.bignum;
 
+function addrVer() {
+	return bitcoin.Settings.network.type == 'testnet'?0x6f:0;
+}
+
 function getOutpoints(blockChain, txStore, txs, callback) {
   if (!Array.isArray(txs)) {
     txs = [txs];
@@ -63,14 +67,14 @@ function formatTx(tx) {
       return;
     }
     if (txin.source) {
-      data.in[j].sourceAddr = Util.pubKeyHashToAddress(txin.source.getScript().simpleOutPubKeyHash());
+      data.in[j].sourceAddr = Util.pubKeyHashToAddress(txin.source.getScript().simpleOutPubKeyHash(), addrVer());
       data.in[j].value = Util.formatValue(txin.source.v);
     }
     data.in[j].type = txin.getScript().getInType();
   });
 
   tx.outs.forEach(function (txout, j) {
-    data.out[j].toAddr = Util.pubKeyHashToAddress(txout.getScript().simpleOutPubKeyHash());
+    data.out[j].toAddr = Util.pubKeyHashToAddress(txout.getScript().simpleOutPubKeyHash(), addrVer());
     data.out[j].type = txout.getScript().getOutType();
   });
 
@@ -437,7 +441,7 @@ exports.addrquery = function addrquery(args, opt, callback) {
             txData.coinbase = true;
           } else {
             var pubKeyHash = txin.source.getScript().simpleOutPubKeyHash();
-            txData.sourceAddr = Util.pubKeyHashToAddress(pubKeyHash);
+            txData.sourceAddr = Util.pubKeyHashToAddress(pubKeyHash, addrVer());
           }
 
           txData.out = tx.outs.map(function (txout) {
@@ -462,7 +466,7 @@ exports.addrquery = function addrquery(args, opt, callback) {
             } else {
               var pubKeyHash = txin.source.getScript().simpleOutPubKeyHash();
               return {
-                sourceAddr: Util.pubKeyHashToAddress(pubKeyHash)
+                sourceAddr: Util.pubKeyHashToAddress(pubKeyHash, addrVer())
               };
             }
           });
