@@ -1,46 +1,35 @@
-# node-bitcoin-exit
+# BitcoinX nodejs-server-exit mod
 
-Public API that enables thin clients to communicate with the Bitcoin
-network.
+check you have nodejs 0.10.x:
 
-# Installation
-
-First you need to [install
-node-bitcoin-p2p](https://github.com/bitcoinjs/node-bitcoin-p2p).
-
-Make sure you download the block chain after configuring
-`node-bitcoin-p2p`.
-
-Then, run these steps to install `node-bitcoin-exit`:
-
-``` sh
-# Get a copy of node-bitcoin-exit
-git clone git://github.com/bitcoinjs/node-bitcoin-exit.git --recursive
-# Switch to the folder
-cd node-bitcoin-exit
-# Link in your copy of node-bitcoin-p2p
-sudo npm link bitcoinjs
-# Install other dependencies
-sudo npm install
+```
+$ node --version
+v0.10.3
 ```
 
-# Usage
+If not, find package for your system or proceed to http://nodejs.org/download/
 
-Start the server with
+Installing the server (a bit convoluted to be able edit things in-place):
 
-``` sh
-node server.js
+```
+cd node-leveldb
+git checkout dev/update_0.10
+npm install coffee-script
+cd ../bitcoinjs-server
+npm install ../node-leveldb
+npm install .
+cd ../node-bitcoin-exit
+mkdir node_modules
+ln -s ../../bitcoinjs-server node_modules/bitcoinjs
+ln -s ../bitcoinjs-gui public
+npm install .
+node server.js --bchdbg --testnet
 ```
 
-We recommend using [forever](https://github.com/indexzero/forever) to
-make sure the server is automatically restarted in case of an error.
+Add to ```~/.bitcoinjs/testnet/settings.js```:
 
-``` sh
-forever start server.js
-```
+```cfg.verifyScripts = false; ```
 
-# Status
+(Bitcoinjs is not capable enough to verify odd testnet scripts).
 
-First permanent deployment is online at https://exit.trucoin.com:3125/
 
-Prototype software, use at your own peril.
