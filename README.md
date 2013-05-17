@@ -9,6 +9,15 @@ v0.10.3
 
 If not, find package for your system or proceed to http://nodejs.org/download/
 
+You'll need following repos:
+
+```
+git clone https://github.com/katuma/bitcoinjs-gui.git --recursive
+git clone https://github.com/katuma/bitcoinjs-server.git
+git clone https://github.com/katuma/node-bitcoin-exit.git
+git clone https://github.com/katuma/node-leveldb.git
+```
+
 Installing the server (a bit convoluted to be able edit things in-place):
 
 ```
